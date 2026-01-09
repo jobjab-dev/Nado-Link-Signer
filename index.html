@@ -647,6 +647,14 @@
                 <input type="text" class="form-input" id="ledgerAddress" placeholder="0x..." autocomplete="off">
             </div>
 
+            <div class="form-group">
+                <label class="form-label">Nonce (check on Nado UI or leave as auto-fetch)</label>
+                <input type="number" class="form-input" id="manualNonce" placeholder="Auto-fetch (or enter manually)"
+                    min="0">
+                <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">💡 Find your nonce in Nado
+                    Settings → API Key Config</div>
+            </div>
+
             <button class="btn btn-primary btn-full" id="generateBtn" onclick="generateLinkedSigner()">
                 🔐 Generate Linked Signer
             </button>
@@ -874,21 +882,40 @@
                 const subaccount = makeSubaccount(ledgerAddress);
                 const signerBytes32 = makeSignerBytes32(wallet.address);
 
-                // Fetch nonce
-                showStatus('step1Status', 'Fetching nonce from Nado...', 'loading');
-
+                // Check for manual nonce first
+                const manualNonceInput = document.getElementById('manualNonce').value.trim();
                 let nonce = 0;
-                try {
-                    const response = await fetch(
-                        `${NADO_GATEWAY_REST}/query?type=nonces&subaccount=${subaccount}`,
-                        { headers: { 'Accept-Encoding': 'gzip' } }
-                    );
-                    if (response.ok) {
-                        const data = await response.json();
-                        nonce = parseInt(data.tx_nonce || 0);
+
+                if (manualNonceInput !== '' && !isNaN(parseInt(manualNonceInput))) {
+                    // User provided manual nonce
+                    nonce = parseInt(manualNonceInput);
+                    showStatus('step1Status', `Using manual nonce: ${nonce}`, 'info');
+                } else {
+                    // Try to fetch nonce from API
+                    showStatus('step1Status', 'Fetching nonce from Nado...', 'loading');
+                    try {
+                        const response = await fetch(
+                            `${NADO_GATEWAY_REST}/query?type=nonces&subaccount=${subaccount}`,
+                            { headers: { 'Accept-Encoding': 'gzip' } }
+                        );
+                        if (response.ok) {
+                            const data = await response.json();
+                            nonce = parseInt(data.tx_nonce || 0);
+                            showStatus('step1Status', `Fetched nonce: ${nonce}`, 'info');
+                        } else {
+                            throw new Error('API returned error');
+                        }
+                    } catch (e) {
+                        console.warn('Could not fetch nonce:', e);
+                        // Ask user to enter manually
+                        const userNonce = prompt('Could not fetch nonce automatically.\n\nPlease enter your nonce (find it in Nado Settings → API Key Config):');
+                        if (userNonce !== null && !isNaN(parseInt(userNonce))) {
+                            nonce = parseInt(userNonce);
+                        } else {
+                            showStatus('step1Status', 'Please enter a valid nonce in the form above and try again.', 'error');
+                            return;
+                        }
                     }
-                } catch (e) {
-                    console.warn('Could not fetch nonce, using 0:', e);
                 }
 
                 // Store EIP-712 data
@@ -1052,14 +1079,8 @@
                 if (result.status === 'success' || response.ok) {
                     showStatus('submitStatus', 'Submitted successfully!', 'success');
 
-                    // Show result card - NO private key displayed for security
+                    // Show result card
                     document.getElementById('resultCard').classList.remove('hidden');
-                    document.getElementById('envConfig').innerHTML =
-                        `# Nado Linked Signer Configuration<br>` +
-                        `# Use the private key you saved from the secure modal<br>` +
-                        `NADO_PRIVATE_KEY=<your_saved_private_key><br><br>` +
-                        `# Ledger Address: ${eip712Data.ledgerAddress}<br>` +
-                        `# Signer Address: ${signerData.address}`;
 
                 } else {
                     throw new Error(JSON.stringify(result));
