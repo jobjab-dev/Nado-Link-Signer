@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nado Link Signer</title>
+    <script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a25;
+            --bg-input: #252535;
+            --accent: #a3e635;
+            --accent-hover: #bef264;
+            --accent-dim: rgba(163, 230, 53, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: #888899;
+            --text-muted: #555566;
+            --error: #ef4444;
+            --warning: #f59e0b;
+            --success: #22c55e;
+            --border: #2a2a3a;
+            --gradient-1: linear-gradient(135deg, #a3e635 0%, #22d3ee 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-content {
+            max-width: 900px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-icon {
+            font-size: 1.8rem;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Step Indicator */
+        .steps-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .step-dot {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-card);
+            border-radius: 2rem;
+            border: 1px solid var(--border);
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+        }
+
+        .step-dot.active {
+            background: var(--accent-dim);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .step-dot.completed {
+            background: rgba(34, 197, 94, 0.1);
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .step-number {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--bg-input);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        .step-dot.active .step-number {
+            background: var(--accent);
+            color: var(--bg-primary);
+        }
+
+        .step-dot.completed .step-number {
+            background: var(--success);
+            color: white;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: rgba(163, 230, 53, 0.3);
+        }
+
+        .card.hidden {
+            display: none;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-icon {
+            font-size: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .card-description {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-dim);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: var(--bg-primary);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(163, 230, 53, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--bg-input);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-card);
+            border-color: var(--accent);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-full {
+            width: 100%;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        /* Data Display */
+        .data-box {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .data-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .data-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            word-break: break-all;
+            color: var(--text-primary);
+        }
+
+        .data-value.highlight {
+            color: var(--accent);
+        }
+
+        .data-value.warning {
+            color: var(--warning);
+        }
+
+        /* Copy Button */
+        .copy-btn {
+            padding: 0.5rem;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .copy-btn:hover {
+            color: var(--accent);
+        }
+
+        .data-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Status Messages */
+        .status {
+            padding: 1rem;
+            border-radius: 12px;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .status.success {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+        }
+
+        .status.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--error);
+            color: var(--error);
+        }
+
+        .status.warning {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid var(--warning);
+            color: var(--warning);
+        }
+
+        .status.info {
+            background: var(--accent-dim);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+        }
+
+        .status.loading {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid #6366f1;
+            color: #a5b4fc;
+        }
+
+        /* Spinner */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid transparent;
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Result Card */
+        .result-card {
+            background: linear-gradient(135deg, rgba(163, 230, 53, 0.1) 0%, rgba(34, 211, 238, 0.1) 100%);
+            border: 1px solid var(--accent);
+        }
+
+        .env-config {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+        }
+
+        .env-config code {
+            color: var(--accent);
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+
+            .steps-indicator {
+                gap: 0.25rem;
+            }
+
+            .step-dot {
+                padding: 0.4rem 0.75rem;
+                font-size: 0.75rem;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+
+        /* Signature textarea */
+        .signature-box {
+            width: 100%;
+            min-height: 100px;
+            padding: 1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            resize: vertical;
+        }
+
+        .signature-box:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        /* Grid for data */
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        /* Animation */
+        .fade-in {
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .modal-overlay.hidden {
+            display: none;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border: 2px solid var(--warning);
+            border-radius: 20px;
+            max-width: 600px;
+            width: 100%;
+            padding: 2rem;
+            animation: modalSlideIn 0.3s ease;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-icon {
+            font-size: 4rem;
+            display: block;
+            margin-bottom: 1rem;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--warning);
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .modal-warning {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid var(--error);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .modal-warning-icon {
+            font-size: 1.5rem;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-warning-text {
+            color: var(--error);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .private-key-display {
+            background: var(--bg-primary);
+            border: 2px dashed var(--warning);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 0.85rem;
+            word-break: break-all;
+            text-align: center;
+            color: var(--warning);
+            user-select: all;
+            cursor: text;
+        }
+
+        .modal-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .btn-copy-key {
+            background: var(--warning);
+            color: var(--bg-primary);
+        }
+
+        .btn-copy-key:hover {
+            background: #fbbf24;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3);
+        }
+
+        .btn-confirm {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-confirm:hover:not(:disabled) {
+            background: #16a34a;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(34, 197, 94, 0.3);
+        }
+
+        .btn-confirm:disabled {
+            background: var(--bg-input);
+            color: var(--text-muted);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .copy-status {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        .copy-status.copied {
+            color: var(--success);
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header">
+        <div class="header-content">
+            <span class="logo-icon">🔑</span>
+            <span class="logo">Nado Link Signer</span>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Step Indicator -->
+        <div class="steps-indicator">
+            <div class="step-dot active" id="step1-indicator">
+                <span class="step-number">1</span>
+                <span>Create Signer</span>
+            </div>
+            <div class="step-dot" id="step2-indicator">
+                <span class="step-number">2</span>
+                <span>Sign with Ledger</span>
+            </div>
+            <div class="step-dot" id="step3-indicator">
+                <span class="step-number">3</span>
+                <span>Submit</span>
+            </div>
+        </div>
+
+        <!-- Step 1: Create Linked Signer -->
+        <div class="card" id="step1">
+            <div class="card-header">
+                <span class="card-icon">👛</span>
+                <h2 class="card-title">Step 1: Create Linked Signer</h2>
+            </div>
+            <p class="card-description">
+                Enter your Ledger wallet address (connected to Nado) and generate a new linked signer key for your bot.
+            </p>
+
+            <div class="form-group">
+                <label class="form-label">Ledger Wallet Address</label>
+                <input type="text" class="form-input" id="ledgerAddress" placeholder="0x..." autocomplete="off">
+            </div>
+
+            <button class="btn btn-primary btn-full" id="generateBtn" onclick="generateLinkedSigner()">
+                🔐 Generate Linked Signer
+            </button>
+
+            <div id="step1Status"></div>
+        </div>
+
+        <!-- Generated Signer Info (shown after generation) -->
+        <div class="card hidden" id="signerInfo">
+            <div class="card-header">
+                <span class="card-icon">✨</span>
+                <h2 class="card-title">Linked Signer Ready</h2>
+            </div>
+
+            <div class="data-grid">
+                <div class="data-box">
+                    <div class="data-header">
+                        <span class="data-label">Signer Address</span>
+                        <button class="copy-btn" onclick="copyToClipboard(signerData.address, this)">📋</button>
+                    </div>
+                    <div class="data-value" id="signerAddress"></div>
+                </div>
+
+                <div class="data-box">
+                    <div class="data-header">
+                        <span class="data-label">Private Key Status</span>
+                    </div>
+                    <div class="data-value" id="privateKeyStatus" style="color: var(--success);">✅ Saved (shown once)
+                    </div>
+                </div>
+            </div>
+
+            <div class="status info">
+                🔐 Private key was shown once in the secure modal. Make sure you saved it!
+            </div>
+
+            <div class="data-box" style="margin-top: 1rem;">
+                <div class="data-label">Nonce (tx_nonce)</div>
+                <div class="data-value" id="nonceValue"></div>
+            </div>
+        </div>
+
+        <!-- Step 2: Sign with Ledger -->
+        <div class="card hidden" id="step2">
+            <div class="card-header">
+                <span class="card-icon">✍️</span>
+                <h2 class="card-title">Step 2: Sign with Ledger</h2>
+            </div>
+            <p class="card-description">
+                Connect your Ledger wallet via MetaMask/Rabby and sign the EIP-712 message to authorize the linked
+                signer.
+            </p>
+
+            <div class="btn-group">
+                <button class="btn btn-secondary" id="connectBtn" onclick="connectWallet()">
+                    🔗 Connect Wallet
+                </button>
+                <button class="btn btn-primary" id="signBtn" onclick="signMessage()" disabled>
+                    ✍️ Sign with Ledger
+                </button>
+            </div>
+
+            <div id="walletStatus"></div>
+
+            <div class="form-group" style="margin-top: 1.5rem;">
+                <label class="form-label">Signature</label>
+                <textarea class="signature-box" id="signatureBox" readonly
+                    placeholder="Signature will appear here after signing..."></textarea>
+            </div>
+        </div>
+
+        <!-- Step 3: Submit to Nado -->
+        <div class="card hidden" id="step3">
+            <div class="card-header">
+                <span class="card-icon">🚀</span>
+                <h2 class="card-title">Step 3: Submit to Nado</h2>
+            </div>
+            <p class="card-description">
+                Submit the signed link request to Nado to activate your linked signer.
+            </p>
+
+            <button class="btn btn-primary btn-full" id="submitBtn" onclick="submitToNado()">
+                🚀 Submit to Nado
+            </button>
+
+            <div id="submitStatus"></div>
+        </div>
+
+        <!-- Result Card -->
+        <div class="card result-card hidden" id="resultCard">
+            <div class="card-header">
+                <span class="card-icon">🎉</span>
+                <h2 class="card-title">Success!</h2>
+            </div>
+            <p class="card-description">
+                Your linked signer has been set up successfully.<br>
+                Use the private key you saved earlier in your .env file.
+            </p>
+        </div>
+    </main>
+
+    <!-- Private Key Modal (One-Time Display) -->
+    <div class="modal-overlay hidden" id="privateKeyModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-icon">🔐</span>
+                <h2 class="modal-title">Save Your Private Key</h2>
+                <p class="modal-subtitle">This is the only time your private key will be shown</p>
+            </div>
+
+            <div class="modal-warning">
+                <span class="modal-warning-icon">⚠️</span>
+                <p class="modal-warning-text">
+                    After you close this modal, the private key will be permanently hidden.<br>
+                    You MUST copy and save it now!
+                </p>
+            </div>
+
+            <div class="private-key-display" id="modalPrivateKey"></div>
+
+            <div class="modal-actions">
+                <button class="btn btn-copy-key btn-full" id="copyKeyBtn" onclick="copyPrivateKeyFromModal()">
+                    📋 Copy Private Key
+                </button>
+                <div class="copy-status" id="copyKeyStatus">Click to copy the private key</div>
+                <button class="btn btn-confirm btn-full" id="confirmKeyBtn" onclick="confirmPrivateKeySaved()" disabled>
+                    ✅ I've Saved the Private Key - Continue
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Nado Constants
+        const NADO_CHAIN_ID = 57073;
+        const NADO_GATEWAY_REST = "https://gateway.prod.nado.xyz/v1";
+        const NADO_ENDPOINT = "0x05ec92D78ED421f3D3Ada77FFdE167106565974E";
+        const NADO_DOMAIN_NAME = "Nado";
+        const NADO_DOMAIN_VERSION = "0.0.1";
+
+        // State
+        let signerData = {
+            address: null,
+            privateKey: null
+        };
+        let tempPrivateKey = null; // Stored temporarily until modal is closed
+        let privateKeyCopied = false;
+        let eip712Data = null;
+        let provider = null;
+        let walletSigner = null;
+        let currentSignature = null;
+
+        // Helper Functions
+        function makeSubaccount(address, name = "default") {
+            const addressBytes = address.slice(2).toLowerCase();
+            const nameBytes = stringToHex(name.padEnd(12, '\0').slice(0, 12));
+            return "0x" + addressBytes + nameBytes;
+        }
+
+        function stringToHex(str) {
+            let hex = '';
+            for (let i = 0; i < str.length; i++) {
+                hex += str.charCodeAt(i).toString(16).padStart(2, '0');
+            }
+            return hex;
+        }
+
+        function makeSignerBytes32(address) {
+            const addressBytes = address.slice(2).toLowerCase();
+            return "0x" + addressBytes + "0".repeat(24);
+        }
+
+        function showStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const icon = type === 'success' ? '✅' :
+                type === 'error' ? '❌' :
+                    type === 'warning' ? '⚠️' :
+                        type === 'loading' ? '<div class="spinner"></div>' : 'ℹ️';
+
+            element.innerHTML = `<div class="status ${type} fade-in">${icon} ${message}</div>`;
+        }
+
+        function updateStepIndicator(currentStep) {
+            for (let i = 1; i <= 3; i++) {
+                const indicator = document.getElementById(`step${i}-indicator`);
+                indicator.classList.remove('active', 'completed');
+
+                if (i < currentStep) {
+                    indicator.classList.add('completed');
+                } else if (i === currentStep) {
+                    indicator.classList.add('active');
+                }
+            }
+        }
+
+        function copyToClipboard(text, btn) {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = btn.textContent;
+                btn.textContent = '✓';
+                setTimeout(() => btn.textContent = originalText, 1500);
+            });
+        }
+
+        // Step 1: Generate Linked Signer
+        async function generateLinkedSigner() {
+            const ledgerAddress = document.getElementById('ledgerAddress').value.trim();
+
+            if (!ledgerAddress.startsWith('0x') || ledgerAddress.length !== 42) {
+                showStatus('step1Status', 'Please enter a valid Ethereum address (0x...)', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('generateBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div> Generating...';
+
+            try {
+                // Generate new wallet
+                const wallet = ethers.Wallet.createRandom();
+                signerData.address = wallet.address;
+                // NOTE: Private key is NOT stored in signerData for security
+                // It will only be shown once in the modal
+
+                // Create subaccount
+                const subaccount = makeSubaccount(ledgerAddress);
+                const signerBytes32 = makeSignerBytes32(wallet.address);
+
+                // Fetch nonce
+                showStatus('step1Status', 'Fetching nonce from Nado...', 'loading');
+
+                let nonce = 0;
+                try {
+                    const response = await fetch(
+                        `${NADO_GATEWAY_REST}/query?type=nonces&subaccount=${subaccount}`,
+                        { headers: { 'Accept-Encoding': 'gzip' } }
+                    );
+                    if (response.ok) {
+                        const data = await response.json();
+                        nonce = parseInt(data.tx_nonce || 0);
+                    }
+                } catch (e) {
+                    console.warn('Could not fetch nonce, using 0:', e);
+                }
+
+                // Store EIP-712 data
+                eip712Data = {
+                    ledgerAddress: ledgerAddress,
+                    subaccount: subaccount,
+                    signerBytes32: signerBytes32,
+                    nonce: nonce,
+                    domain: {
+                        name: NADO_DOMAIN_NAME,
+                        version: NADO_DOMAIN_VERSION,
+                        chainId: NADO_CHAIN_ID,
+                        verifyingContract: NADO_ENDPOINT
+                    },
+                    types: {
+                        LinkSigner: [
+                            { name: "sender", type: "bytes32" },
+                            { name: "signer", type: "bytes32" },
+                            { name: "nonce", type: "uint64" }
+                        ]
+                    },
+                    value: {
+                        sender: subaccount,
+                        signer: signerBytes32,
+                        nonce: nonce
+                    }
+                };
+
+                // Store temp private key for modal
+                tempPrivateKey = wallet.privateKey;
+                privateKeyCopied = false;
+
+                // Update UI - show only address, not private key
+                document.getElementById('signerAddress').textContent = wallet.address;
+                document.getElementById('nonceValue').textContent = nonce;
+
+                // Show private key modal FIRST
+                showPrivateKeyModal(wallet.privateKey);
+
+                showStatus('step1Status', 'Linked signer generated! Please save your private key.', 'info');
+
+            } catch (error) {
+                showStatus('step1Status', `Error: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🔐 Generate Linked Signer';
+            }
+        }
+
+        // Step 2: Connect Wallet
+        async function connectWallet() {
+            const btn = document.getElementById('connectBtn');
+
+            try {
+                if (typeof window.ethereum === 'undefined') {
+                    showStatus('walletStatus', 'No wallet found. Please install MetaMask or Rabby.', 'error');
+                    return;
+                }
+
+                btn.disabled = true;
+                btn.innerHTML = '<div class="spinner"></div> Connecting...';
+
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                walletSigner = provider.getSigner();
+                const address = await walletSigner.getAddress();
+
+                if (address.toLowerCase() !== eip712Data.ledgerAddress.toLowerCase()) {
+                    showStatus('walletStatus',
+                        `⚠️ Connected: ${address.slice(0, 8)}...${address.slice(-6)}<br>` +
+                        `Expected: ${eip712Data.ledgerAddress.slice(0, 8)}...${eip712Data.ledgerAddress.slice(-6)}<br>` +
+                        `Please switch to the correct account.`,
+                        'warning');
+                } else {
+                    showStatus('walletStatus', `Connected: ${address}`, 'success');
+                }
+
+                document.getElementById('signBtn').disabled = false;
+
+            } catch (error) {
+                showStatus('walletStatus', `Connection failed: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🔗 Connect Wallet';
+            }
+        }
+
+        // Step 2: Sign Message
+        async function signMessage() {
+            if (!walletSigner || !eip712Data) {
+                showStatus('walletStatus', 'Please connect wallet first', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('signBtn');
+
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<div class="spinner"></div> Waiting for signature...';
+                showStatus('walletStatus', 'Please approve the signature on your Ledger device...', 'loading');
+
+                const signature = await walletSigner._signTypedData(
+                    eip712Data.domain,
+                    eip712Data.types,
+                    eip712Data.value
+                );
+
+                currentSignature = signature;
+                document.getElementById('signatureBox').value = signature;
+
+                showStatus('walletStatus', 'Signed successfully!', 'success');
+
+                // Show step 3
+                document.getElementById('step3').classList.remove('hidden');
+                updateStepIndicator(3);
+
+            } catch (error) {
+                showStatus('walletStatus', `Signing failed: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '✍️ Sign with Ledger';
+            }
+        }
+
+        // Step 3: Submit to Nado
+        async function submitToNado() {
+            if (!currentSignature || !eip712Data) {
+                showStatus('submitStatus', 'Missing signature or data', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('submitBtn');
+
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<div class="spinner"></div> Submitting...';
+                showStatus('submitStatus', 'Submitting to Nado...', 'loading');
+
+                const payload = {
+                    link_signer: {
+                        tx: {
+                            sender: eip712Data.subaccount,
+                            signer: eip712Data.signerBytes32,
+                            nonce: String(eip712Data.nonce)
+                        },
+                        signature: currentSignature
+                    }
+                };
+
+                const response = await fetch(`${NADO_GATEWAY_REST}/execute`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept-Encoding': 'gzip'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success' || response.ok) {
+                    showStatus('submitStatus', 'Submitted successfully!', 'success');
+
+                    // Show result card - NO private key displayed for security
+                    document.getElementById('resultCard').classList.remove('hidden');
+                    document.getElementById('envConfig').innerHTML =
+                        `# Nado Linked Signer Configuration<br>` +
+                        `# Use the private key you saved from the secure modal<br>` +
+                        `NADO_PRIVATE_KEY=<your_saved_private_key><br><br>` +
+                        `# Ledger Address: ${eip712Data.ledgerAddress}<br>` +
+                        `# Signer Address: ${signerData.address}`;
+
+                } else {
+                    throw new Error(JSON.stringify(result));
+                }
+
+            } catch (error) {
+                showStatus('submitStatus', `Submission failed: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🚀 Submit to Nado';
+            }
+        }
+
+        function copyEnvConfig() {
+            // Only copy the template without the actual private key
+            const config = `# Nado Linked Signer Configuration\n# Paste your saved private key below\nNADO_PRIVATE_KEY=<paste_your_private_key_here>\n\n# Signer Address: ${signerData.address}`;
+            navigator.clipboard.writeText(config).then(() => {
+                alert('Template copied! Remember to paste your saved private key.');
+            });
+        }
+
+        // Private Key Modal Functions
+        function showPrivateKeyModal(privateKey) {
+            document.getElementById('modalPrivateKey').textContent = privateKey;
+            document.getElementById('privateKeyModal').classList.remove('hidden');
+            document.getElementById('confirmKeyBtn').disabled = true;
+            document.getElementById('copyKeyStatus').textContent = 'Click to copy the private key';
+            document.getElementById('copyKeyStatus').classList.remove('copied');
+        }
+
+        function copyPrivateKeyFromModal() {
+            const privateKey = document.getElementById('modalPrivateKey').textContent;
+            navigator.clipboard.writeText(privateKey).then(() => {
+                privateKeyCopied = true;
+                document.getElementById('copyKeyBtn').innerHTML = '✅ Copied!';
+                document.getElementById('copyKeyStatus').textContent = '✓ Private key copied to clipboard!';
+                document.getElementById('copyKeyStatus').classList.add('copied');
+                document.getElementById('confirmKeyBtn').disabled = false;
+
+                // Reset copy button after delay
+                setTimeout(() => {
+                    document.getElementById('copyKeyBtn').innerHTML = '📋 Copy Private Key';
+                }, 2000);
+            }).catch(err => {
+                // Fallback: select the text
+                const keyDisplay = document.getElementById('modalPrivateKey');
+                const selection = window.getSelection();
+                const range = document.createRange();
+                range.selectNodeContents(keyDisplay);
+                selection.removeAllRanges();
+                selection.addRange(range);
+
+                document.getElementById('copyKeyStatus').textContent = 'Text selected - press Ctrl+C to copy';
+                privateKeyCopied = true;
+                document.getElementById('confirmKeyBtn').disabled = false;
+            });
+        }
+
+        function confirmPrivateKeySaved() {
+            if (!privateKeyCopied) {
+                alert('Please copy the private key first!');
+                return;
+            }
+
+            // Clear the private key from modal display
+            document.getElementById('modalPrivateKey').textContent = '••••••••••••••••••••••••••••••••';
+
+            // Hide modal
+            document.getElementById('privateKeyModal').classList.add('hidden');
+
+            // Show the rest of the UI
+            document.getElementById('signerInfo').classList.remove('hidden');
+            document.getElementById('step2').classList.remove('hidden');
+
+            showStatus('step1Status', 'Linked signer generated successfully! Private key saved.', 'success');
+            updateStepIndicator(2);
+
+            // Clear temp private key from display (but keep in signerData for final config)
+            tempPrivateKey = null;
+        }
+
+        // Prevent closing modal by clicking outside or pressing escape
+        document.getElementById('privateKeyModal').addEventListener('click', function (e) {
+            if (e.target === this) {
+                // Do nothing - force user to click the button
+                document.getElementById('copyKeyBtn').style.animation = 'shake 0.5s';
+                setTimeout(() => {
+                    document.getElementById('copyKeyBtn').style.animation = '';
+                }, 500);
+            }
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('privateKeyModal');
+                if (!modal.classList.contains('hidden')) {
+                    e.preventDefault();
+                    // Shake the modal to indicate it can't be closed
+                    document.querySelector('.modal').style.animation = 'shake 0.5s';
+                    setTimeout(() => {
+                        document.querySelector('.modal').style.animation = '';
+                    }, 500);
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
