@@ -709,6 +709,9 @@
             </p>
 
             <div class="btn-group">
+                <button class="btn btn-secondary" id="addNetworkBtn" onclick="addInkNetwork()">
+                    🌐 Add Ink Network
+                </button>
                 <button class="btn btn-secondary" id="connectBtn" onclick="connectWallet()">
                     🔗 Connect Wallet
                 </button>
@@ -962,6 +965,48 @@
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '🔐 Generate Linked Signer';
+            }
+        }
+
+        // Add Ink Network to MetaMask
+        async function addInkNetwork() {
+            const btn = document.getElementById('addNetworkBtn');
+
+            try {
+                if (typeof window.ethereum === 'undefined') {
+                    showStatus('walletStatus', 'No wallet found. Please install MetaMask or Rabby.', 'error');
+                    return;
+                }
+
+                btn.disabled = true;
+                btn.innerHTML = '<div class="spinner"></div> Adding...';
+
+                await window.ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [{
+                        chainId: '0xDEF1',  // 57073 in hex
+                        chainName: 'Ink Mainnet',
+                        nativeCurrency: {
+                            name: 'ETH',
+                            symbol: 'ETH',
+                            decimals: 18
+                        },
+                        rpcUrls: ['https://rpc-gel.inkonchain.com'],
+                        blockExplorerUrls: ['https://explorer.inkonchain.com']
+                    }]
+                });
+
+                showStatus('walletStatus', 'Ink Network added successfully! Now click Connect Wallet.', 'success');
+
+            } catch (error) {
+                if (error.code === 4001) {
+                    showStatus('walletStatus', 'User rejected the request.', 'warning');
+                } else {
+                    showStatus('walletStatus', `Failed to add network: ${error.message}`, 'error');
+                }
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🌐 Add Ink Network';
             }
         }
 
